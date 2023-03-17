@@ -2,14 +2,23 @@ import { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import server from '../configs/server';
 import API from '../configs/API';
 
-export const REST = {
+interface REST {
+  [key: string]: 'get' | 'post' | 'put' | 'delete';
+}
+
+export const REST: REST = {
   GET: 'get',
   POST: 'post',
   PUT: 'put',
   DELETE: 'delete',
 };
 
-export const getResponseUsable = (response: AxiosResponse) => {
+interface ResponseUsable {
+  status: number | null;
+  data: any;
+}
+
+export const getResponseUsable = (response: AxiosResponse): ResponseUsable => {
   return {
     status: response.status ? response.status : null,
     data: response.data ? response.data : null,
@@ -106,6 +115,20 @@ export const refresh = (
   const result = fetchData();
 
   return result;
+};
+
+export const tryCatchResponse = (func: () => Promise<ResponseUsable>): Promise<ResponseUsable> => {
+  try {
+    return new Promise((resolve) => {
+      resolve(func());
+    });
+  } catch (err) {
+    if (err instanceof AxiosError) {
+      const res = err.response!;
+      return new Promise((resolve) => resolve(getResponseUsable(res)));
+    }
+  }
+  return new Promise((resolve) => resolve({ status: null, data: null }));
 };
 
 export const unescapeHTML = (escapedHTML: string) => {
